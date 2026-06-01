@@ -218,7 +218,10 @@ hr {
 # =====================================
 @st.cache_resource
 def load_food_model():
-    return tf.keras.models.load_model("food_model.h5")
+    return tf.keras.models.load_model(
+        "food_model.h5",
+        compile=False
+    )
 
 try:
     model = load_food_model()
