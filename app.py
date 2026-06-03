@@ -240,8 +240,8 @@ defaults = {
     "target_protein": None, "target_fat": None,
     "last_pred": None,
     "upload_reset_key": 0,
-    "meal_type_idx": 0,
-}defaults = {
+    "meal_type_idx": 0,}
+defaults = {
     "total_kcal": 0, "total_protein": 0, "total_carb": 0, "total_fat": 0,
     "foods": [], "night_count": 0,
     "weekly_scores": [], "weekly_calories": [], "weekly_details": [],
