@@ -229,17 +229,27 @@ with tab2:
     st.markdown("<p style='color:#8080a0;'>사진을 업로드하면 AI가 15가지 음식을 자동 인식합니다.</p>", unsafe_allow_html=True)
 
     meal_options = ["아침","점심","저녁","야식"]
-    meal_type = st.selectbox(
-        "식사 종류",
-        meal_options,
-        index=st.session_state.meal_type_idx,
-        key="meal_type_select"
-    )
-    uploaded_file = st.file_uploader(
-        "사진 선택 (JPG, PNG)",
-        type=["jpg","jpeg","png"],
-        key=f"uploader_{st.session_state.upload_reset_key}"
-    )
+    meal_colors  = {"아침":"#7c6fff","점심":"#00d4aa","저녁":"#4fc3f7","야식":"#FF4B4B"}
+
+    st.markdown("**식사 종류**")
+    m1, m2, m3, m4 = st.columns(4)
+    for col, opt in zip([m1,m2,m3,m4], meal_options):
+        selected = (st.session_state.meal_type_idx == meal_options.index(opt))
+        c = meal_colors[opt]
+        bg = f"{c}33" if selected else "#1a1a24"
+        border = c if selected else "rgba(255,255,255,0.1)"
+        fw = "700" if selected else "400"
+        col.markdown(
+            f"<div style='border:2px solid {border};background:{bg};border-radius:10px;"
+            f"padding:10px;text-align:center;color:{c if selected else '#8080a0'};"
+            f"font-weight:{fw};font-size:14px;margin-bottom:4px;'>{opt}</div>",
+            unsafe_allow_html=True
+        )
+        if col.button(opt, key=f"meal_btn_{opt}"):
+            st.session_state.meal_type_idx = meal_options.index(opt)
+            st.rerun()
+
+    meal_type = meal_options[st.session_state.meal_type_idx]
 
     if uploaded_file is not None:
         col_img, col_res = st.columns([1,1])
