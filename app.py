@@ -234,7 +234,23 @@ except Exception as e:
 defaults = {
     "total_kcal": 0, "total_protein": 0, "total_carb": 0, "total_fat": 0,
     "foods": [], "night_count": 0,
-    "weekly_scores": [], "weekly_calories": [], "weekly_details": []
+    "weekly_scores": [], "weekly_calories": [], "weekly_details": [],
+    "page": "🏠 대시보드",
+    "target_calorie": None, "target_carb": None,
+    "target_protein": None, "target_fat": None,
+    "last_pred": None,
+    "upload_reset_key": 0,
+    "meal_type_idx": 0,
+}defaults = {
+    "total_kcal": 0, "total_protein": 0, "total_carb": 0, "total_fat": 0,
+    "foods": [], "night_count": 0,
+    "weekly_scores": [], "weekly_calories": [], "weekly_details": [],
+    "page": "🏠 대시보드",
+    "target_calorie": None, "target_carb": None,
+    "target_protein": None, "target_fat": None,
+    "last_pred": None,
+    "upload_reset_key": 0,
+    "meal_type_idx": 0,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -357,10 +373,10 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         gender = st.selectbox("성별", ["남", "여"], index=None, placeholder="선택하세요")
-        age    = st.number_input("나이 (세)", min_value=1, max_value=100, value=None, placeholder="25")
+        age    = st.number_input("나이 (세)", min_value=1, max_value=100, value=None, placeholder=" ")
     with col2:
-        height = st.number_input("키 (cm)", min_value=100, max_value=250, value=None, placeholder="170")
-        weight = st.number_input("몸무게 (kg)", min_value=30, max_value=200, value=None, placeholder="65")
+        height = st.number_input("키 (cm)", min_value=100, max_value=250, value=None, placeholder=" ")
+        weight = st.number_input("몸무게 (kg)", min_value=30, max_value=200, value=None, placeholder=" ")
 
     goal = st.selectbox("목표", ["다이어트 (체중 감량)", "유지 (체중 유지)", "벌크업 (근육 증가)"], index=None, placeholder="선택하세요")
     info_complete = None not in (gender, age, height, weight, goal)
@@ -447,8 +463,18 @@ with tab2:
     st.markdown("## 📸 음식 사진 업로드")
     st.markdown("<p style='color:#8080a0;'>사진을 업로드하면 AI가 15가지 음식을 자동 인식합니다.</p>", unsafe_allow_html=True)
 
-    meal_type = st.selectbox("🕐 식사 종류", ["아침", "점심", "저녁", "야식"])
-    uploaded_file = st.file_uploader("사진 선택 (JPG, PNG)", type=["jpg","jpeg","png"])
+    meal_options = ["아침","점심","저녁","야식"]
+meal_type = st.selectbox(
+    "식사 종류",
+    meal_options,
+    index=st.session_state.meal_type_idx,
+    key="meal_type_select"
+)
+uploaded_file = st.file_uploader(
+    "사진 선택 (JPG, PNG)",
+    type=["jpg","jpeg","png"],
+    key=f"uploader_{st.session_state.upload_reset_key}"
+)
 
     def register_meal(info, mtype):
         st.session_state.total_kcal    += info["kcal"]
@@ -503,7 +529,19 @@ with tab2:
                     f"<div style='font-size:10px;color:#8080a0;'>지방g</div></div>"
                     f"</div></div>", unsafe_allow_html=True
                 )
-                st.button("🍽️ 이 식사 등록하기", on_click=register_meal, args=(info, meal_type))
+                if st.button("🍽️ 이 식사 등록하기"):
+                    st.session_state.total_kcal    += info["kcal"]
+                    st.session_state.total_protein += info["protein"]
+                    st.session_state.total_carb    += info["carb"]
+                    st.session_state.total_fat     += info["fat"]
+                    st.session_state.foods.append((meal_type, info["name"]))
+                    if meal_type == "야식":
+                        st.session_state.night_count += 1
+                        st.session_state.upload_reset_key += 1
+                        st.session_state.meal_type_idx = 0
+                        st.session_state.last_pred = None
+                        st.success(f"✅ {info['emoji']} {info['name']}이(가) {meal_type} 식사로 등록되었습니다!")\
+                        st.rerun()
             else:
                 st.warning("모델이 로드되지 않아 예측을 수행할 수 없습니다.")
 
@@ -528,7 +566,10 @@ with tab3:
     else:
         # 오늘 요약 미리보기
         col_a, col_b, col_c, col_d = st.columns(4)
-        col_a.metric("섭취 칼로리", f"{st.session_state.total_kcal} kcal")
+        col_a.metric("섭취 칼로리", f"{st.session_state.total_kcal} kcal",
+          delta=f"{'초과' if st.session_state.total_kcal > target_calorie else '부족'} "
+                f"{abs(round(st.session_state.total_kcal - target_calorie))}kcal",
+          delta_color="inverse" if st.session_state.total_kcal > target_calorie else "normal")
         col_b.metric("탄수화물",    f"{st.session_state.total_carb}g")
         col_c.metric("단백질",      f"{st.session_state.total_protein}g")
         col_d.metric("지방",        f"{st.session_state.total_fat}g")
